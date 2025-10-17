@@ -1,0 +1,7 @@
+python-chess
+requests
+supabase
+python-dotenv
+psycopg2
+pandas
+beautifulsoup4
