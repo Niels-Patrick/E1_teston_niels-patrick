@@ -1,19 +1,22 @@
 from realtime import List
 import requests
 from bs4 import BeautifulSoup
-import re
+import json
 import chess
+import re
+import time
+from urllib.parse import urljoin
+from urllib.robotparser import RobotFileParser
 
 
-url = "https://en.wikipedia.org/wiki/Game_of_the_Century_(chess)"
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/116.0.0.0 Safari/537.36"
-}
+URL = "https://en.wikipedia.org/wiki/Game_of_the_Century_(chess)"
+HEADERS = {"User-Agent": "SchoolProjectBot/1.0 (+niels.teston@gmail.com)"}
 
 
 def convert_to_uci(san_moves: List) -> List:
+    """
+    Converts a list of san moves to a list of uci moves.
+    """
     board = chess.Board()
     uci_moves = []
 
@@ -28,28 +31,63 @@ def convert_to_uci(san_moves: List) -> List:
     return uci_moves
 
 
-def execute_scraping() -> List:
-    url = "https://www.pgnmentor.com/players/Mikenas/"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "html.parser")
+def can_fetch(url: str, user_agent: str="*") -> bool:
+    """
+    Checks if a webscraping request is allowed on a webpage.
+    """
+    rp = RobotFileParser()
+    rp.set_url(urljoin(URL, "/robots.txt"))
+    rp.read()
+    return rp.can_fetch(user_agent, url)
 
-    # Find the script tag containing the PGN data
-    script_tag = soup.find("script", text=re.compile("var games ="))
 
-    # Extract the PGN data using a regular expression
-    pgn_data = re.search(r"var games = (\[.*?\]);", script_tag.string, re.DOTALL).group(1)
+def clean_text(s: str) -> str:
+    """
+    Normalizes whitespace and strip arrows/extra markers.
+    """
+    s = s.replace("\xa0", " ")
+    s = s.strip()
+    # Removes leading arrows and odd bullet markers
+    s = re.sub(r'^[\u2192\u00BB\-\->\s]+', '', s)
+    # Collapses multiple spaces
+    s = re.sub(r'\s+', '', s)
+    return s.strip()
 
-    # Clean up the PGN data
-    pgn_data = pgn_data.replace("'", '"')  # Replace single quotes with double quotes for valid JSON
-    pgn_data = pgn_data.replace("},", "},\n")  # Add newlines for better readability
 
-    san_moves = []
-
-    for p in pgn_data["moves"]:
-        san_moves.append(p)
-
-    return convert_to_uci(san_moves)
+def parse_line_content(text: str):
+    """
+    Given a content snippet like
+        "-> Andersen, Polish Gambit: 1.a3 a5 2.b4"
+    Returns a list of (name, moves) for each 'variant' in the snippet.
+    """
+    results = []
+    # Splits on the '->' arrow symbol or on '-> ->' sequences, but keep also
+    # plain parts
+    parts = [p.strip() for p in re.split(r'[\u2192\u00BB]|→', text) if p.strip()]
+    for part in parts:
+        # Expected form: "Name: moves", or "Name, Subname: moves" or just
+        # "Name moves"
+        part = part.strip(" -–—") # Strip dashes around
+        # Tries match "Name: moves"
+        m = re.match(r'^(?P<name>[^:]+?)\s*:\s*(?P<moves>.+)$', part)
+        if m:
+            name = clean_text(m.group('name'))
+            moves = clean_text(m.group('moves'))
+            results.append((name, moves))
+        else:
+            # Fallback: splits by last occurrence of a move-like token
+            # (e.g. "1." or a move)
+            if "1." in part:
+                idx = part.find("1.")
+                name = clean_text(part[:idx].rstrip(':, '))
+                moves = clean_text(part[idx:])
+                results.append((name or None, moves))
+            else:
+                # If no clear moves, treat entire part as name (no moves)
+                results.append((clean_text(part), ""))
+    
+    return results
 
 
 if __name__ == "__main__":
-    print(execute_scraping())
+    execute_scraping()
