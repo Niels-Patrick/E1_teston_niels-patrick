@@ -5,3 +5,4 @@ python-dotenv
 psycopg2
 pandas
 beautifulsoup4
+cassandra-driver
