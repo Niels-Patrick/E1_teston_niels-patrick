@@ -19,7 +19,12 @@ def fetch_games_db() -> List:
     try:
         conn = psycopg2.connect(connect)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT * FROM games LIMIT 1000;")
+        cur.execute("""
+                    SELECT event, utcdate, white, black, result, whiteelo,
+                           blackelo, eco, an
+                    FROM games
+                    LIMIT 1000;
+                    """)
         rows = cur.fetchall()
         cur.close()
         conn.close()

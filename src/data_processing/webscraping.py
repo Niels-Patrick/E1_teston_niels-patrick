@@ -1,18 +1,128 @@
+import time
 from realtime import List
 import requests
 from bs4 import BeautifulSoup
 import json
 import chess
 import re
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
 
 
-URL = "https://en.wikipedia.org/wiki/Game_of_the_Century_(chess)"
-HEADERS = {"User-Agent": "SchoolProjectBot/1.0 (+niels.teston@gmail.com)"}
+URL = "https://en.wikipedia.org/wiki/List_of_chess_openings"
+HEADERS = {"User-Agent": "SchoolProjectScraper/1.0 (+niels.teston@gmail.com)"}
 
 
-def convert_to_uci(san_moves: List) -> List:
+def can_fetch(url: str, user_agent: str="*") -> bool:
+    """
+    Checks if a webscraping request is allowed on a webpage.
+    """
+    rp = RobotFileParser()
+    domain = urlparse(url).scheme + "://" + urlparse(url).netloc
+    rp.set_url(domain + "/robots.txt")
+    rp.read()
+    return rp.can_fetch(user_agent, url)
+
+
+def clean_name(name: str) -> str:
+    if not name or not isinstance(name, str):
+        return None
+
+    name = name.strip()
+    name = re.sub(r'^[\u2192→]\s*', '', name)  # remove arrow
+    name = re.sub(r',\s*', ', ', name)
+
+    return name if name else None
+
+
+def scrape_openings() -> None:
+    # Fetches the web page
+    time.sleep(10)
+    r = requests.get(URL, headers=HEADERS, timeout=30)
+    html = r.text
+    print(r.status_code)
+    print(r.text[:500])
+
+    soup = BeautifulSoup(html, "html.parser")
+    content = soup.find("div", class_="mw-parser-output")
+    openings = []
+
+    for node in content.find_all(["p", "li"]):
+        text = node.get_text(" ", strip=True)
+        if "1." not in text:
+            continue  # skip anything without moves
+
+        # Extract ECO code if present
+        eco_match = re.search(r"\(([A-E]\d{2}(?:–[A-E]?\d{2})?)\)", text)
+        eco = eco_match.group(1) if eco_match else None
+
+        # Split at the first '1.' to get name vs moves
+        parts = text.split("1.", 1)
+        name = parts[0].strip(" ––-:,.") if parts[0].strip() else None
+        moves = "1." + parts[1].strip()  # add back the 1.
+
+        openings.append({
+            "name": name,
+            "eco": eco,
+            "moves": moves
+        })
+
+        cleaned_openings = []
+        current_eco = None
+        for entry in openings:
+            name = clean_name(entry["name"])
+
+            if not name:
+                continue  # skip entries without a valid name
+
+            if entry['eco']:
+                entry['eco'] = entry['eco'].replace('\u2013', '-')
+
+            eco = entry["eco"]
+            if eco:
+                current_eco = eco
+            else:
+                eco = current_eco
+
+            cleaned_openings.append({
+                "name": name,
+                "eco": eco,
+                "moves": entry["moves"]
+            })
+
+    with open("chess_openings.json", "w", encoding="utf-8") as f:
+        json.dump(cleaned_openings, f, indent=2, ensure_ascii=False)
+
+    return cleaned_openings
+
+
+def clean_moves(moves: str) -> str:
+    # Removing ECO garbage like (A00–A39)
+    moves = re.sub(r"\([A-E]\d{2}[^)]*\)", "", moves)
+
+    # Removing stray punctuation
+    moves = moves.replace(",", " ").replace(":", " ")
+
+    # Fixing castling
+    moves = re.sub(r"0-0-0|0-0-0|0-0-0", "O-O-O", moves)
+    moves = re.sub(r"0-0|0-0|0-0|0-", "O-O", moves)
+
+    # Ensuring space before move numbers: 2.Nf3 → 2. Nf3
+    moves = re.sub(r"(\d+)\.", r" \1. ", moves)
+
+    # Fixing glued rank numbers: e52. → e5 2.
+    moves = re.sub(r"([a-h])([1-8])(\d+\.)", r"\1\2 \3", moves)
+
+    # Fixing glued pieces and ranks: Nc65. → Nc6 5.
+    moves = re.sub(r"([NBRQK])([a-h]?[1-8])(\d+\.)", r"\1\2 \3", moves)
+
+    # Collapsing whitespace
+    moves = re.sub(r"\s+", " ", moves).strip()
+
+    return moves
+
+
+def convert_to_uci(san_moves: str) -> List[str]:
     """
     Converts a list of san moves to a list of uci moves.
     """
@@ -23,221 +133,84 @@ def convert_to_uci(san_moves: List) -> List:
         # Skips turn numbers
         if re.match(r"^\d+\.$", san):
             continue
+
         try:
             move = board.parse_san(san)
-
             uci_moves.append(move.uci())
             board.push(move)
         except ValueError:
-            uci_moves.append(san)
             print(f"Skipping invalid move: {san}")
 
     return uci_moves
 
 
-def can_fetch(url: str, user_agent: str="*") -> bool:
-    """
-    Checks if a webscraping request is allowed on a webpage.
-    """
-    rp = RobotFileParser()
-    rp.set_url(urljoin(URL, "/robots.txt"))
-    rp.read()
-    return rp.can_fetch(user_agent, url)
+def clean_data(entry):
+    # Safe copy
+    name = entry.get("name")
+    eco = entry.get("eco")
+    moves = entry.get("moves")
 
+    if not isinstance(name, str):
+        name = ""
 
-def clean_text(s: str) -> str:
-    """
-    Normalizes whitespace and strip arrows/extra markers.
-    """
-    s = s.replace("\xa0", " ")
-    s = s.strip()
-    # Removes leading arrows and odd bullet markers
-    s = re.sub(r'^[\u2192\u00BB\-\->\s]+', '', s)
-    # Collapses multiple spaces
-    s = re.sub(r'\s+', '', s)
-    return s.strip()
+    # Normalizing moves to string
+    if isinstance(moves, list):
+        moves = " ".join(moves)
+    if not isinstance(moves, str):
+        moves = ""
 
+    moves = moves.replace(",", " ").strip()
 
-def parse_line_content(text: str) -> List:
-    """
-    Given a content snippet like
-        "-> Andersen, Polish Gambit: 1.a3 a5 2.b4"
-    Returns a list of (name, moves) for each 'variant' in the snippet.
-    """
-    results = []
-    # Splits on the '->' arrow symbol or on '-> ->' sequences, but keep also
-    # plain parts
-    parts = [
-        p.strip() for p in re.split(r'[\u2192\u00BB]|→', text) if p.strip()
-        ]
-    for part in parts:
-        # Expected form: "Name: moves", or "Name, Subname: moves" or just
-        # "Name moves"
-        part = part.strip(" -–—") # Strip dashes around
-        # Tries match "Name: moves"
-        m = re.match(r'^(?P<name>[^:]+?)\s*:\s*(?P<moves>.+)$', part)
-        if m:
-            name = clean_text(m.group('name'))
-            moves = clean_text(m.group('moves'))
-            results.append((name, moves))
-        else:
-            # Fallback: splits by last occurrence of a move-like token
-            # (e.g. "1." or a move)
-            if "1." in part:
-                idx = part.find("1.")
-                name = clean_text(part[:idx].rstrip(':, '))
-                moves = clean_text(part[idx:])
-                results.append((name or None, moves))
-            else:
-                # If no clear moves, treat entire part as name (no moves)
-                results.append((clean_text(part), ""))
+    raw_moves = moves
 
-    return results
+    # Running clean_moves if possible
+    try:
+        cleaned_san = clean_moves(raw_moves)
+    except:
+        cleaned_san = raw_moves
 
+    # If still N° "1." then skip
+    if "1." not in cleaned_san:
+        return None
 
-def scrape_openings(soup: BeautifulSoup) -> list:
-    """
-    Main function.
-    Scrapes all of the openings listed on the "List of chess openings"
-    Wikipedia page.
-    """
-    # Politeness: Checks the Wikipedia Robots.txt
-    '''
-    if not can_fetch(URL, HEADERS["User-Agent"]):
-        raise SystemExit("""
-                         Robots.txt disallows scraping this page with your
-                         user-agent. Change user-agent or respect robots.txt.
-                         """)
+    # Trying to convert to uci
+    try:
+        uci = convert_to_uci(cleaned_san)
+        if len(uci) < 2:
+            return None
+    except:
+        return None
 
-    # Fetches the web page
-    resp = requests.get(URL, headers=HEADERS, timeout=20)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
-    '''
-
-    # Finds the main content div
-    content = soup.find("div", class_="mw-parser-output")
-    if content is None:
-        raise RuntimeError(
-            "Could not find main content div; page structure changed."
-            )
-
-    openings = []
-    current_eco = None
-
-    # Iterates over all of mw-parser-output children
-    for node in content.find_all(recursive=False):
-        # Looks for headings that start with an ECO code like "A00", "B20–B99"
-        # or "A00–A09"
-        if node.name and node.name.startswith("h"):
-            heading_text = node.get_text(" ", strip=True)
-            # Look for an ECO code at beginning like "A00", "A10–A39",
-            # "A00–A09", etc.
-            eco_match = re.match(
-                r'^([A-E]\d{2})(?:[–\u2013\u2014]\w+)?',
-                heading_text
-                )
-            if eco_match:
-                # Sets the current ECO group
-                current_eco = eco_match.group(1)
-                continue
-            else:
-                continue
-
-        if node.name in ("p", "ul", "ol", "dl", "div"):
-            text = node.get_text("\n", strip=True)
-            if not text:
-                continue
-            # Splits into lines (some nodes contain many numbered lines)
-            lines = [
-                line.strip() for line in text.splitlines() if line.strip()
-                ]
-
-            for line in lines:
-                # Discards lines that are just section headings such as "A00
-                # Irregular Openings" already handled
-                # Matches leading numbering "1." etc
-                num_match = re.match(r'^\d+\.\s*(.*)$', line)
-                content_part = line
-                if num_match:
-                    content_part = num_match.group(1)
-                # Skips lines that are only arrows or only references
-                content_part = content_part.strip()
-                if not content_part or re.match(r'^[\[\]0-9]+$', content_part):
-                    continue
-
-                # Splits variants (->)
-                entries = parse_line_content(content_part)
-                for name, moves in entries:
-                    if not name and not moves:
-                        continue
-                    # If moves is empty, tries to see if name contains moves
-                    if moves == "" and re.search(r'\b1\.', name):
-                        # tries to split at '1.'
-                        idx = name.find('1.')
-                        moves = clean_text(name[idx:])
-                        name = clean_text(name[:idx].rstrip(':, '))
-                    if moves:
-                        openings.append({
-                            "name": name,
-                            "eco": current_eco,
-                            "moves": moves
-                        })
-    return openings
-
-
-def clean_data() -> list:
-    """
-    Cleans the scraped data to remove all entries where "moves" doesn't start
-    with "1.", then adds proper spacing for "moves" content.
-    """
-    with open("data/chess_openings.json", "r", encoding="utf-8") as f:
-        openings = json.load(f)
-
-    true_openings = [
-        entry for entry in openings
-        if entry.get("moves", "").strip().startswith("1.")
-    ]
-
-    cleaned_openings = []
-    for entry in true_openings:
-        # Adds spaces before and after the turn number
-        #moves = re.sub(r'(\d+)\.', r' \1. ', entry.get('moves'))
-        # Adds spaces between moves
-        moves = re.sub(r'([a-hKQRBNO0-9])(\d\.)', r'\1 \2', entry.get('moves'))
-
-        moves = re.sub(r'(\d+)\.', r' \1. ', moves)
-
-        moves = re.sub(r'([a-h][1-8])(?![ =])([KQRBNOa-h])', r'\1 \2', moves)
-        # Removes extra spaces
-        moves = re.sub(r'\s+', ' ', moves).strip()
-
-        uci_moves = convert_to_uci(moves)
-
-        cleaned_openings.append({
-            "name": entry.get("name"),
-            "eco": entry.get("eco"),
-            "moves": uci_moves
-        })
-
-    with open("data/chess_openings_cleaned.json", "w", encoding="utf-8") as f:
-        json.dump(cleaned_openings, f, indent=4, ensure_ascii=False)
+    return {
+        "name": re.sub(r"\s+", " ", name.replace(",", ", ")).strip(),
+        "eco": eco,
+        "moves": uci
+    }
 
 
 def main():
     """
     The main function of the script.
     """
-    with open("data/chess_openings.html", encoding="utf-8") as f:
-        soup = BeautifulSoup(f, "html.parser")
-
-    openings = scrape_openings(soup)
+    openings = scrape_openings()
     print(f"Found {len(openings)} openings.")
+
     with open("data/chess_openings.json", "w", encoding="utf-8") as f:
         json.dump(openings, f, indent=2, ensure_ascii=False)
     print("Saved to chess_openings.json")
 
-    clean_data()
+    with open("data/chess_openings.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    final = []
+    for entry in data:
+        cleaned = clean_data(entry)
+        if cleaned:
+            final.append(cleaned)
+
+    with open("data/chess_openings.json", "w", encoding="utf-8") as f:
+        json.dump(final, f, indent=2)
+
     print("Saved to chess_openings_cleaned.json")
 
 

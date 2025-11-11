@@ -1,3 +1,4 @@
+from pathlib import Path
 import chess
 from realtime import List
 import json
@@ -117,21 +118,59 @@ def save_in_database(json_list: List) -> None:
                     ))
 
 
-if __name__ == "__main__":
+def data_aggregation() -> None:
+    aggregated_data = {
+        "games": [],
+        "openings": []
+    }
+
     # Files
     with open("data/Carlsen.json", "r", encoding="utf-8") as f:
         json_list = json.load(f)
-    clean_process(json_list)
+    json_list = clean_process(json_list)
+    for data in json_list:
+        aggregated_data["games"].append(data)
 
     # API
     with open("data/games_lichess.json", "r", encoding="utf-8") as f:
         json_list = json.load(f)
-    clean_process(json_list)
+    json_list = clean_process(json_list)
+    for data in json_list:
+        aggregated_data["games"].append(data)
 
     # Database
     rows = fetch_games_db()
-    clean_process(rows)
+    json_list = clean_process(rows)
+    for data in json_list:
+        aggregated_data["games"].append(data)
 
     # Big Data
     rows = fetch_games_big_data()
-    clean_process(rows)
+    json_list = clean_process(rows)
+    for data in json_list:
+        aggregated_data["games"].append(data)
+
+    # Webscraping
+    with open("data/chess_openings.json", "r", encoding="utf-8") as f:
+        json_list = json.load(f)
+    # Cleaning illegal moves only -> empty rows cleaned in webscraping script
+    print(f"Starting with {len(json_list)} games.")
+    json_list = clean_illegal_moves(json_list)
+    print(f"All illegal games have been removed. {len(json_list)} games remaining.")
+    for data in json_list:
+        aggregated_data["openings"].append(data)
+
+    out_path = Path("data/foxchess_data").with_suffix(".json")
+    out_path.write_text(
+        json.dumps(
+            aggregated_data,
+            indent=2,
+            ensure_ascii=False,
+            default=lambda o: o.isoformat() if hasattr(o, "isoformat") else str(o)
+            ),
+        encoding="utf-8"
+    )
+
+
+if __name__ == "__main__":
+    data_aggregation()
