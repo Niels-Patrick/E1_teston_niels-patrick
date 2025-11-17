@@ -5,7 +5,7 @@ from cassandra.cluster import Cluster
 
 cluster = Cluster(['127.0.0.1'])
 session = cluster.connect('foxchess')
-path = "D:\\Niels-Patrick\\Documents\\Etudes et Formations\\Simplon\\FoxChess\\archive\\chess_games.csv"
+path = "D:\\Niels-Patrick\\Documents\\Etudes et Formations\\Simplon\\FoxChess\\archive\\chess_games.csv" # noqa
 
 
 with open(path, newline='') as f:

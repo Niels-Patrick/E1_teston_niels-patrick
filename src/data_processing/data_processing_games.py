@@ -118,7 +118,7 @@ def save_in_database(json_list: List) -> None:
                     ))
 
 
-def data_aggregation() -> None:
+def data_aggregation() -> dict[str, List]:
     aggregated_data = {
         "games": [],
         "openings": []
@@ -171,6 +171,4 @@ def data_aggregation() -> None:
         encoding="utf-8"
     )
 
-
-if __name__ == "__main__":
-    data_aggregation()
+    return aggregated_data

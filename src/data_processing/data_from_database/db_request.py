@@ -22,8 +22,7 @@ def fetch_games_db() -> List:
         cur.execute("""
                     SELECT event, utcdate, white, black, result, whiteelo,
                            blackelo, eco, an
-                    FROM games
-                    LIMIT 1000;
+                    FROM games;
                     """)
         rows = cur.fetchall()
         cur.close()

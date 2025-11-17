@@ -1,16 +1,15 @@
 from cassandra.cluster import Cluster
 from src.data_processing.utils import san_to_uci
 
-cluster = Cluster(['127.0.0.1'])
+cluster = Cluster(['172.17.0.2'], port=9042)
 session = cluster.connect('foxchess')
 
 
 def fetch_games_big_data():
     try:
-        rows = session.execute('''SELECT *
-                                    FROM chess_games
-                                    LIMIT 1000
-                                    ALLOW FILTERING;
+        rows = session.execute('''SELECT event, utcdate, white, black, result,
+                                         whiteelo, blackelo, eco, an
+                                  FROM games;
                                 ''')
 
         rows = [dict(row._asdict()) for row in rows]

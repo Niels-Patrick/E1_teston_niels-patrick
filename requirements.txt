@@ -6,4 +6,16 @@ psycopg2
 pandas
 beautifulsoup4
 cassandra-driver
-bcrypt
+python-jose[cryptography]
+passlib[bcrypt]
+sqlalchemy
+flask
+flask-sqlalchemy
+flask_socketio
+flask-jwt-extended
+flask-cors
+logging
+marshmallow
+marshmallow-sqlalchemy
+flasgger
+loguru
