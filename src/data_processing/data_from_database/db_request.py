@@ -16,6 +16,29 @@ supabase = create_client(url, key)
 
 
 def fetch_games_db() -> List:
+    """
+    Executes extraction request from the Supabase (PostgreSQL) database.
+
+    There is only one table in the Supabase database: games.
+
+    The selected fields are the ones necessary to prepare the dataset for the
+    model training.
+
+    The selected fields are:
+        - event: the name of the event or the type of the game.
+        - utcdate: the date of the game.
+        - white: name of the white player.
+        - black: name of the black player.
+        - result: the result of the game (who won and lost).
+        - whiteelo: the white player's elo (at the time the game happened).
+        - blackelo: the black player's elo (at the time the game happened).
+        - eco: the ECO number of the game's opening.
+        - an: the entire game's moves in SAN notation.
+
+    Returns:
+        rows (list[dict]): A list of dicts containing all games' data (one
+                           game per dict).
+    """
     try:
         conn = psycopg2.connect(connect)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
