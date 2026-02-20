@@ -33,6 +33,11 @@ class Opening(db.Model):
         foreign_keys="Game.id_opening"
         )
 
+    def __init__(self, name: str, eco: str, moves: list[str]):
+        self.name = name
+        self.eco = eco,
+        self.moves = moves
+
     def to_json(self) -> dict:
         """
         Returns an Opening's data as JSON.

@@ -1,0 +1,49 @@
+services:
+  e1-foxchess:
+    build:
+      dockerfile: Dockerfile
+    container_name: e1-foxchess
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - foxchess-logs:/app/src/logs
+    networks:
+      - foxchess-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - foxchess-network
+    depends_on:
+      - e1-foxchess
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+  
+  grafana:
+    build:
+      context: ./monitoring/grafana
+      dockerfile: Dockerfile
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - foxchess-network
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+
+networks:
+  foxchess-network:
+
+volumes:
+  grafana-storage:
+  foxchess-logs:

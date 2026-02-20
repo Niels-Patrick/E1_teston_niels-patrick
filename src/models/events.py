@@ -27,6 +27,9 @@ class Event(db.Model):
         back_populates="event"
         )
 
+    def __init__(self, name: str):
+        self.name = name
+
     def to_json(self) -> dict:
         """
         Returns an Event's data as JSON.

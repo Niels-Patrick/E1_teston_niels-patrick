@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import json
 import chess
 import re
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
 
@@ -13,7 +13,7 @@ URL = "https://en.wikipedia.org/wiki/List_of_chess_openings"
 HEADERS = {"User-Agent": "SchoolProjectScraper/1.0 (+niels.teston@gmail.com)"}
 
 
-def can_fetch(url: str, user_agent: str="*") -> bool:
+def can_fetch(url: str, user_agent: str = "*") -> bool:
     """
     Checks if a webscraping request is allowed on a webpage.
     """
@@ -166,7 +166,7 @@ def clean_data(entry):
     # Running clean_moves if possible
     try:
         cleaned_san = clean_moves(raw_moves)
-    except:
+    except ValueError:
         cleaned_san = raw_moves
 
     # If still N° "1." then skip
@@ -178,7 +178,7 @@ def clean_data(entry):
         uci = convert_to_uci(cleaned_san)
         if len(uci) < 2:
             return None
-    except:
+    except ValueError:
         return None
 
     return {

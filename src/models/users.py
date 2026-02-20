@@ -20,6 +20,12 @@ class User(Player):
     password = Column(String(500), nullable=False)
     email = Column(String(250), nullable=False)
 
+    def __init__(self, username: str, elo: int, email: str, password: str):
+        self.username = username
+        self.elo = elo
+        self.email = email
+        self.password = password
+
     __mappers_args__ = {
         "polymorphic_identity": "user"
     }

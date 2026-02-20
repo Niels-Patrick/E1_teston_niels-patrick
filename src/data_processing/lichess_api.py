@@ -17,7 +17,8 @@ if __name__ == "__main__":
     r = requests.get(
         f"{BASE_URL}{username}",
         params=params,
-        headers={"Accept": "application/x-chess-pgn"}
+        headers={"Accept": "application/x-chess-pgn"},
+        timeout=120
         )
 
     pgn_file = StringIO(r.text)

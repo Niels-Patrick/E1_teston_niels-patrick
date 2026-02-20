@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from dotenv import load_dotenv
@@ -5,7 +6,6 @@ import psycopg2
 import psycopg2.extras
 from psycopg2 import IntegrityError
 from cryptography.fernet import Fernet
-from src.data_processing.data_processing_games import data_aggregation
 
 
 load_dotenv()
@@ -16,7 +16,10 @@ def migration():
     conn = psycopg2.connect(os.getenv("DB_CONNECTION_STRING"))
     cur = conn.cursor()
 
-    json_list = data_aggregation()
+    json_list = []
+
+    with open("data/foxchess_data.json", "r", encoding="utf-8") as f:
+        json_list = json.load(f)
 
     opening_cache = {}
 
@@ -95,7 +98,7 @@ def migration():
                 player_white_cache[row["white"]] = player_white_id  # ✅ cache it
         except Exception as e:
             print(f"Error while inserting white players: {str(e)}")
-        
+
         conn.commit()
 
         try:

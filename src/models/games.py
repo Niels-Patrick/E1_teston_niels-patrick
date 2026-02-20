@@ -56,6 +56,24 @@ class Game(db.Model):
         foreign_keys=[id_player_black]
         )
 
+    def __init__(
+        self,
+        game_date: Date,
+        game_result: str,
+        moves: list[str],
+        id_event: uuid,
+        id_opening: uuid,
+        id_player_white: uuid,
+        id_player_black: uuid
+    ):
+        self.game_date = game_date
+        self.game_result = game_result
+        self.moves = moves
+        self.id_event = id_event
+        self.id_opening = id_opening
+        self.id_player_white = id_player_white
+        self.id_player_black = id_player_black
+
 
 def get_games() -> list[Game]:
     """
@@ -70,4 +88,18 @@ def get_games() -> list[Game]:
         return games
     except Exception as e:
         logger_manager.error(f"Error fetching Games in database: {str(e)}")
+        raise
+
+
+def get_game_by_id(id: uuid) -> Game:
+    """
+    Fetches a specific game from the database based on their id.
+    """
+    try:
+        game = Game.query.filter_by(id=id).first()
+
+        logger_manager.info("Game successfully fetched from database")
+        return game
+    except Exception as e:
+        logger_manager.error(f"Error fetching game in database: {str(e)}")
         raise

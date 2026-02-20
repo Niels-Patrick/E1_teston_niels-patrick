@@ -19,7 +19,7 @@ def main():
     conn = psycopg2.connect(connect)
     cur = conn.cursor()
 
-    chunk_size= 100000
+    chunk_size = 100000
     for i, chunk in enumerate(pd.read_csv(path, chunksize=chunk_size)):
         temp_file = f"..\\data\\temp_files\\part_{i}.csv"
         chunk.to_csv(temp_file, index=False)

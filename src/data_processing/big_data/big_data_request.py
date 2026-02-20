@@ -30,10 +30,13 @@ def fetch_games_big_data() -> list[dict]:
                            game per dict).
     """
     try:
-        rows = session.execute('''SELECT event, utcdate, white, black, result,
-                                         whiteelo, blackelo, eco, an
-                                  FROM chess_games;
-                                ''')
+        rows = session.execute(
+            '''
+            SELECT event, utcdate, white, black, result,
+                   whiteelo, blackelo, eco, an
+            FROM chess_games;
+            '''
+            )
 
         rows = [dict(row._asdict()) for row in rows]
 

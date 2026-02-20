@@ -39,8 +39,8 @@ class Player(db.Model):
         )
 
     __mappers_args__ = {
-        "polymorphic_identity": "player",
-        "polymorphic_on": type
+        "polymorphic_on": type,
+        "polymorphic_identity": "player"
     }
 
     def to_json(self) -> dict:
@@ -79,6 +79,20 @@ def get_player_by_username(username: str) -> Player:
     """
     try:
         player = Player.query.filter_by(username=username).first()
+
+        logger_manager.info("User successfully fetched from database")
+        return player
+    except Exception as e:
+        logger_manager.error(f"Error fetching user in database: {str(e)}")
+        raise
+
+
+def get_player_by_id(id: uuid) -> Player:
+    """
+    Fetches a specific user from the database based on their unique username.
+    """
+    try:
+        player = Player.query.filter_by(id=id).first()
 
         logger_manager.info("User successfully fetched from database")
         return player
