@@ -18,3 +18,4 @@ marshmallow
 marshmallow-sqlalchemy
 flasgger
 loguru
+eventlet

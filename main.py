@@ -11,10 +11,13 @@ The routes' documentation is available on: http://127.0.0.1:5000/apidocs/
 
 import os
 import sys
+import eventlet
 
 from src.app.application import Application
 from src.app.config import AppConfig
 
+
+eventlet.monkey_patch()
 
 # Adds the project root to the Python path
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))

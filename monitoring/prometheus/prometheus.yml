@@ -1,7 +1,11 @@
 global:
   scrape_interval: 15s
   
-  scrape_configs:
-    - job_name: "e1-foxchess"
-      static_configs:
-        - targets: ["e1-foxchess:5000"]  # if e1-foxchess exposes /metrics
+scrape_configs:
+  - job_name: 'foxchess'
+    static_configs:
+      - targets: ['e1-foxchess:5000']
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

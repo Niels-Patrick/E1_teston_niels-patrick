@@ -50,4 +50,4 @@ COPY . .
 EXPOSE 5000
 
 # Run the application.
-CMD flask --app main run
+CMD python main.py

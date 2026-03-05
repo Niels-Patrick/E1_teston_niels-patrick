@@ -1,4 +1,16 @@
 services:
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      POSTGRES_DB: foxchess
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Bn054Vb007@
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   e1-foxchess:
     build:
       dockerfile: Dockerfile
@@ -10,6 +22,14 @@ services:
       - foxchess-logs:/app/src/logs
     networks:
       - foxchess-network
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: Bn054Vb007@
+      DB_NAME: foxchess
 
   prometheus:
     image: prom/prometheus:latest
@@ -17,7 +37,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus:/etc/prometheus
     networks:
       - foxchess-network
     depends_on:
@@ -39,7 +59,7 @@ services:
       - prometheus
     volumes:
       - grafana-storage:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - .monitoring/grafana/provisioning:/etc/grafana/provisioning
 
 networks:
   foxchess-network:
@@ -47,3 +67,4 @@ networks:
 volumes:
   grafana-storage:
   foxchess-logs:
+  postgres_data:

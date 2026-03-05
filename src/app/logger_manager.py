@@ -57,24 +57,11 @@ class LoggerManager:
             self._logs_dir = base_path / "logs"
             self._logs_dir.mkdir(parents=True, exist_ok=True)
 
-            log_path = self._logs_dir / config.log_file_name
-
             # Previous handlers deletion
             logger.remove()
 
             # Log to console (colorized)
             logger.add(sys.stderr, level=config.log_level)
-
-            # Log to file (not colorized)
-            logger.add(
-                str(log_path),
-                rotation=config.log_rotation,
-                retention=config.log_retention,
-                compression=config.log_compression,
-                level=config.log_level,
-                encoding=config.log_encoding,
-                colorize=False
-            )
 
             logger.info("Logger initialized with config from AppConfig.")
         except Exception as e:
