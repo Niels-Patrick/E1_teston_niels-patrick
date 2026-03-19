@@ -19,3 +19,4 @@ marshmallow-sqlalchemy
 flasgger
 loguru
 eventlet
+prometheus-client

@@ -8,6 +8,8 @@ services:
       POSTGRES_PASSWORD: Bn054Vb007@
     ports:
       - "5432:5432"
+    networks:
+      - foxchess-network
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -60,6 +62,19 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
       - .monitoring/grafana/provisioning:/etc/grafana/provisioning
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    networks:
+      - foxchess-network
+    volumes:
+      - ./uptime-kuma-data:/app/data
+    depends_on:
+      - e1-foxchess
 
 networks:
   foxchess-network:

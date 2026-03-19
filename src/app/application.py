@@ -16,6 +16,7 @@ from src.routes.routes_events import event_management
 from src.routes.routes_games import game_management
 from src.routes.routes_openings import opening_management
 from src.routes.routes_player import player_management
+from src.routes.routes_health import health_management
 
 
 class Application:
@@ -105,6 +106,10 @@ class Application:
         flask_api.register_blueprint(token, url_prefix='/api/token')
         flask_api.register_blueprint(event_management, url_prefix='/api/event')
         flask_api.register_blueprint(game_management, url_prefix='/api/game')
+        flask_api.register_blueprint(
+            health_management,
+            url_prefix='/api/health'
+            )
         flask_api.register_blueprint(
             opening_management,
             url_prefix='/api/opening'
