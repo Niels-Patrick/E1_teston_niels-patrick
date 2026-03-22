@@ -61,7 +61,7 @@ def get_openings() -> list[Opening]:
         openings (list[Opening]): a list of all of the openings.
     """
     try:
-        openings = db.query(Opening).all()
+        openings = Opening.query.all()
 
         return openings
     except Exception as e:

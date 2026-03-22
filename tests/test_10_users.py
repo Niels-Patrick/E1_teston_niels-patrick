@@ -32,7 +32,7 @@ def client(app):
 def test_get_user(client):
     user = get_player_by_username("tuser")
 
-    assert get_player_by_id(user.id) == user
+    assert get_player_by_id(user.id_player) == user
 
 
 def test_get_user_by_username(client):

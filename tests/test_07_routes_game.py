@@ -44,6 +44,8 @@ def test_add_game(client):
         "gameDate": "2000-01-01",
         "gameResult": "0-1",
         "moves": [],
+        "whiteElo": 700,
+        "blackElo": 700,
         "idEvent": test_event.id_event,
         "idOpening": test_opening.id_opening,
         "idPlayerWhite": get_player_by_username("tuser").id_player,
@@ -109,9 +111,12 @@ def test_edit_game(client):
     game_id = game.id_game
 
     game = {
+        "idGame": game_id,
         "gameDate": "2002-01-01",
         "gameResult": "1-0",
         "moves": [],
+        "whiteElo": 800,
+        "blackElo": 800,
         "idEvent": test_event.id_event,
         "idOpening": test_opening.id_opening,
         "idPlayerWhite": get_player_by_username("tuser").id_player,
@@ -132,7 +137,7 @@ def test_edit_game(client):
         )
     assert response.status_code == 400
 
-    game["idGame"] = game_id
+    game["idGame"] = uuid.uuid4()
     response = client.put(
             "/api/game/",
             json=game,

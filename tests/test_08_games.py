@@ -50,6 +50,9 @@ def test_get_game_by_id(client):
 
     assert get_game_by_id(game.id_game) == game  # noqa
 
+    db.session.delete(game)
+    db.session.commit()
+
 
 def test_get_all_games(client):
     games = Game.query.all()

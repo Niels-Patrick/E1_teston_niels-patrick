@@ -15,7 +15,7 @@ from src.app.db_manager import db
 class RefreshToken(db.Model):
     """SQLAlchemy RefreshToken model"""
 
-    __tablename__ = 'refresh_token'
+    __tablename__ = 'refresh_tokens'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     token = Column(Text, nullable=False)
 

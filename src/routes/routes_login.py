@@ -77,7 +77,7 @@ def submit() -> Response:
         user_dict["type"] = "access"
 
         access_token = create_access_token(
-            identity=str(user.id),
+            identity=str(user.id_player),
             expires_delta=timedelta(minutes=15),
             additional_claims=user_dict
             )
@@ -85,7 +85,7 @@ def submit() -> Response:
         refresh_identity = deepcopy(user_dict)
         refresh_identity["type"] = "refresh"
         refresh_token = create_refresh_token(
-            identity=str(user.id),
+            identity=str(user.id_player),
             expires_delta=timedelta(days=7),
             additional_claims=refresh_identity
             )
@@ -93,7 +93,7 @@ def submit() -> Response:
         # Storing the refresh token in the database.
         token = RefreshToken(refresh_token)
 
-        old_refresh_token = get_refresh_token_by_id(user.id)
+        old_refresh_token = get_refresh_token_by_id(user.id_player)
 
         if old_refresh_token is not None:
             db.session.delete(old_refresh_token)

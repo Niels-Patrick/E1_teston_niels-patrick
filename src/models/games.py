@@ -4,10 +4,10 @@ SQLAlchemy Game model file.
 This file contains the SQLAlchemy Game model as well as its functions.
 """
 
-from sqlalchemy import Column, ForeignKey, String, Date, Text
+from sqlalchemy import Column, ForeignKey, Integer, String, Date
 from sqlalchemy.orm import relationship
 import uuid
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from dataclasses import dataclass
 from src.app.db_manager import db
 from src.app.logger_manager import logger_manager
@@ -21,7 +21,9 @@ class Game(db.Model):
     id_game = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     game_date = Column(Date, nullable=True)
     game_result = Column(String(50), nullable=True)
-    moves = Column(Text, nullable=True)
+    moves = Column(JSONB, nullable=True)
+    white_elo = Column(Integer, nullable=False)
+    black_elo = Column(Integer, nullable=False)
     id_event = Column(UUID, ForeignKey("events.id_event"), nullable=True)
     id_opening = Column(UUID, ForeignKey("openings.id_opening"), nullable=True)
     id_player_white = Column(
@@ -61,6 +63,8 @@ class Game(db.Model):
         game_date: Date,
         game_result: str,
         moves: list[str],
+        white_elo: int,
+        black_elo: int,
         id_event: uuid,
         id_opening: uuid,
         id_player_white: uuid,
@@ -69,6 +73,8 @@ class Game(db.Model):
         self.game_date = game_date
         self.game_result = game_result
         self.moves = moves
+        self.white_elo = white_elo
+        self.black_elo = black_elo
         self.id_event = id_event
         self.id_opening = id_opening
         self.id_player_white = id_player_white
@@ -83,7 +89,7 @@ def get_games() -> list[Game]:
         games (list[Game]): a list of all of the games.
     """
     try:
-        games = db.query(Game).all()
+        games = Game.query.all()
 
         return games
     except Exception as e:
@@ -96,7 +102,7 @@ def get_game_by_id(id: uuid) -> Game:
     Fetches a specific game from the database based on their id.
     """
     try:
-        game = Game.query.filter_by(id=id).first()
+        game = Game.query.filter_by(id_game=id).first()
 
         logger_manager.info("Game successfully fetched from database")
         return game

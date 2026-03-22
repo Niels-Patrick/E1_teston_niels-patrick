@@ -345,6 +345,7 @@ def delete_player() -> Response:
     """
     # Gets the current user's data based on their ID stored in the token
     access_token = get_jwt()
+
     current_user: Player = get_player_by_id(uuid.UUID(access_token.get("sub")))
 
     if not current_user:

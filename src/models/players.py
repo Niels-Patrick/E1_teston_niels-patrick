@@ -5,7 +5,7 @@ This file contains the SQLAlchemy Player model as well as its functions.
 """
 
 import uuid
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String
 from sqlalchemy.dialects.postgresql import UUID
 from dataclasses import dataclass
 from src.app.db_manager import db
@@ -24,7 +24,6 @@ class Player(db.Model):
         default=uuid.uuid4
         )
     username = Column(String(500), nullable=False)
-    elo = Column(Integer, nullable=True, default=None)
     type = Column(String(50), nullable=False)
 
     game_white = relationship(
@@ -38,7 +37,7 @@ class Player(db.Model):
         foreign_keys="Game.id_player_black"
         )
 
-    __mappers_args__ = {
+    __mapper_args__ = {
         "polymorphic_on": type,
         "polymorphic_identity": "player"
     }
@@ -87,12 +86,12 @@ def get_player_by_username(username: str) -> Player:
         raise
 
 
-def get_player_by_id(id: uuid) -> Player:
+def get_player_by_id(id: uuid.UUID) -> Player:
     """
     Fetches a specific user from the database based on their unique username.
     """
     try:
-        player = Player.query.filter_by(id=id).first()
+        player = Player.query.filter_by(id_player=id).first()
 
         logger_manager.info("User successfully fetched from database")
         return player

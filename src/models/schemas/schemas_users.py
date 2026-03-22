@@ -20,6 +20,7 @@ class CreateUserSchema(CreatePlayerSchema):
             "id_player",
             )
 
+    elo = fields.Integer(required=False, allow_none=True)
     password = fields.String(required=True)
     email = fields.String(required=True)
 
@@ -34,6 +35,7 @@ class UpdateUserSchema(UpdatePlayerSchema):
             "id_player",
             )
 
+    elo = fields.Integer(required=False, allow_none=True)
     password = fields.String()
     email = fields.String()
 
@@ -45,5 +47,6 @@ class ReadUserSchema(ReadPlayerSchema):
         include_fk = True
 
     id_user = fields.UUID()
+    elo = fields.Integer()
     password = fields.String()
     email = fields.String()

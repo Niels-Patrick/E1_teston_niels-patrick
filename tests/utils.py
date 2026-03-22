@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from src.models.events import Event
 from src.models.openings import Opening
 from src.models.players import get_player_by_username
+from src.models.schemas.schemas_users import CreateUserSchema
 from src.models.users import User
 from src.models.refresh_token import RefreshToken
 from src.models.schemas.schemas_players import ReadPlayerSchema
@@ -59,14 +60,18 @@ def create_user(db: SQLAlchemy) -> User:
     :return: The newly created test user.
     :rtype: User
     """
-    user = User(
-        username="tuser",
-        password=hash_password('password'),
-        email="test.user@gmail.com",
-        elo=700
-    )
+    user = {
+        "username": "tuser",
+        "password": hash_password('password'),
+        "email": "test.user@gmail.com",
+        "elo": 700
+    }
 
-    db.session.add(user)
+    new_user = CreateUserSchema(
+        session=db.session
+        ).load(user)
+
+    db.session.add(new_user)
     db.session.commit()
 
     return user
@@ -151,6 +156,8 @@ def create_game(
         game_date=date(2000, 1, 1),
         game_result="0-1",
         moves=[],
+        white_elo=700,
+        black_elo=700,
         id_event=event_id,
         id_opening=opening_id,
         id_player_white=player_id,

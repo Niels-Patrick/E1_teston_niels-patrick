@@ -168,6 +168,7 @@ def add_game() -> Response:
         logger_manager.info("Game successfully created")
         return jsonify(message="Success: Game successfully created"), 200
     except Exception as e:
+        db.session.rollback()
         logger_manager.error(f"Error while adding a new game: {str(e)}")
         raise
 
@@ -222,12 +223,12 @@ def edit_game() -> Response:
         return jsonify(message="Error: No data provided"), 400
 
     # Gets the current game's data based on its ID
-    current_game: Game = get_game_by_id(uuid.UUID(data.get("gameId")))
+    current_game: Game = get_game_by_id(uuid.UUID(data.get("idGame")))
 
     if not current_game:
-        logger_manager.error("Current user not found")
+        logger_manager.error("Game not found")
         return jsonify(
-            message="Error: Current user not found"
+            message="Error: Game not found"
             ), 404
 
     try:
@@ -251,7 +252,7 @@ def edit_game() -> Response:
         raise
 
 
-@game_management.route('/<uuid:id>', methods=["DELETE"])
+@game_management.route('/<uuid:game_id>', methods=["DELETE"])
 @jwt_required()
 def delete_game(game_id: uuid) -> Response:
     """

@@ -9,6 +9,7 @@ import sys
 import os
 from src.app.db_manager import init_db, database_uri, db
 from src.models.players import get_player_by_username
+from tests.utils import create_user
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + "/.."))
 
@@ -30,6 +31,8 @@ def client(app):
 
 
 def test_logout(client):
+    create_user(db)
+
     with open("access_token.json", "r") as json_file:
         data = json.load(json_file)
 
